@@ -19,21 +19,33 @@ def parse_input(input_str):
     return {"Дата": date.strftime('%Y.%m.%d'), "Название": product_name, "Количество": quantity}
 
 
-try:
-    with open('1.txt', 'r', encoding='utf-8') as file1:
+def parse_food(input_str):
+    parts = input_str.split('"')[1:]
+    name = parts[0].replace('"', '')
+    parts = parts[1].split(' ')
+    start_date = datetime.strptime(parts[1], "%Y.%m.%d")
+    end_date = datetime.strptime(parts[2], "%Y.%m.%d")
+    price = float(parts[3])
 
-        print("Данные из 1.txt:")
-        for i in file1:
-            print(parse_input(i))
-
-    with open('2.txt', 'r', encoding='utf-8') as file2:
-
-        print("Данные из 1.txt:")
-        for i in file2:
-            print(parse_product(i))
+    return {"name": name, "start_date": start_date, "end_date": end_date, "price": price}
 
 
-except FileNotFoundError as e:
-    print(f"Ошибка: Файл не найден - {e}")
-except Exception as e:
-    print(f"Произошла ошибка при чтении файлов: {e}")
+with open('1.txt', 'r', encoding='utf-8') as file1:
+
+    print("Данные из 1.txt:")
+    for i in file1:
+        print(parse_input(i))
+
+
+with open('2.txt', 'r', encoding='utf-8') as file:
+
+    print("Данные из 2.txt:")
+    for i in file:
+        print(parse_product(i))
+
+
+with open('3.txt', 'r', encoding='utf-8') as file:
+
+    print("Данные из 3.txt:")
+    for i in file:
+        print(parse_food(i))

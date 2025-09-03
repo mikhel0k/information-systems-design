@@ -16,7 +16,7 @@ def parse_delivery(input_str):
     product_name = parts[1]
     quantity = int(parts[2])
     date = datetime.strptime(date_str, "%Y.%m.%d")
-    return {"Дата": date.strftime('%Y.%m.%d'), "Название": product_name, "Количество": quantity}
+    return {"date": date.strftime('%Y.%m.%d'), "name": product_name, "count": quantity}
 
 
 def parse_food(input_str):

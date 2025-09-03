@@ -42,29 +42,15 @@ def parse_drinks(input_str):
     return {"name": name, "start_date": start_date, "end_date": end_date, "price": price, "volume": volume}
 
 
-with open('1.txt', 'r', encoding='utf-8') as file1:
-
-    print("Данные из 1.txt:")
-    for i in file1:
-        print(parse_delivery(i))
-
-
-with open('2.txt', 'r', encoding='utf-8') as file:
-
-    print("Данные из 2.txt:")
-    for i in file:
-        print(parse_product(i))
+def add_from_file(function, file_name):
+    with open(file_name, 'r', encoding='utf-8') as file:
+        print(f"Данные из {file_name}:")
+        for i in file:
+            print(function(i))
+        print()
 
 
-with open('3.txt', 'r', encoding='utf-8') as file:
-
-    print("Данные из 3.txt:")
-    for i in file:
-        print(parse_food(i))
-
-
-with open('4.txt', 'r', encoding='utf-8') as file:
-
-    print("Данные из 4.txt:")
-    for i in file:
-        print(parse_drinks(i))
+add_from_file(parse_delivery, '1.txt')
+add_from_file(parse_product, '2.txt')
+add_from_file(parse_food, '3.txt')
+add_from_file(parse_drinks, '4.txt')

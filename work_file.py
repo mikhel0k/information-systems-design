@@ -1,6 +1,12 @@
 from datetime import datetime
-from typing import Dict, Any, Callable, List, Optional
+from typing import List, Any, Callable
 from dataclasses import dataclass
+import re
+
+
+class ParsingError(Exception):
+    """Пользовательское исключение для ошибок парсинга"""
+    pass
 
 
 @dataclass
@@ -9,14 +15,25 @@ class BaseProduct:
     name: str
     price: float
 
+    def __post_init__(self):
+        if not self.name.strip():
+            raise ValueError("Название продукта не может быть пустым")
+        if self.price < 0:
+            raise ValueError("Цена не может быть отрицательной")
+
     def __str__(self) -> str:
-        return f"{self.name} (${self.price})"
+        return f"{self.name} ({self.price:.2f}Р)"
 
 
 @dataclass
 class Product(BaseProduct):
     """Класс для обычных продуктов"""
     provider: str
+
+    def __post_init__(self):
+        super().__post_init__()
+        if not self.provider.strip():
+            raise ValueError("Поставщик не может быть пустым")
 
     def __str__(self) -> str:
         return f"{super().__str__()}, поставщик: {self.provider}"
@@ -29,6 +46,14 @@ class Delivery:
     name: str
     count: int
 
+    def __post_init__(self):
+        if not re.match(r"^\d{4}\.\d{2}\.\d{2}$", self.date):
+            raise ValueError("Неверный формат даты, ожидается YYYY.MM.DD")
+        if not self.name.strip():
+            raise ValueError("Название доставки не может быть пустым")
+        if self.count <= 0:
+            raise ValueError("Количество должно быть положительным")
+
     def __str__(self) -> str:
         return f"Доставка: {self.name} x{self.count} на {self.date}"
 
@@ -39,6 +64,11 @@ class Food(BaseProduct):
     start_date: datetime
     end_date: datetime
 
+    def __post_init__(self):
+        super().__post_init__()
+        if self.end_date <= self.start_date:
+            raise ValueError("Дата окончания срока годности должна быть позже начальной")
+
     def __str__(self) -> str:
         return (f"{super().__str__()}, срок годности: "
                 f"{self.start_date.strftime('%Y.%m.%d')}-{self.end_date.strftime('%Y.%m.%d')}")
@@ -48,6 +78,11 @@ class Food(BaseProduct):
 class Drink(Food):
     """Класс для напитков (наследуется от Food)"""
     volume: float
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.volume <= 0:
+            raise ValueError("Объем должен быть положительным")
 
     def __str__(self) -> str:
         return f"{super().__str__()}, объем: {self.volume}л"
@@ -69,14 +104,18 @@ class Parser:
             Returns:
                 Объект Product с полями: name, price, provider
         """
-        parts = input_str.split('"')[1:]
-        name = parts[0].replace('"', '')
-        price = float(parts[1])
-        provider = parts[2].replace('"', '')
-
-        product = Product(name=name, price=price, provider=provider)
-        self.products.append(product)
-        return product
+        try:
+            parts = input_str.split('"')
+            if len(parts) < 5:
+                raise ParsingError("Неверный формат строки продукта, ожидается: \"name\" price \"provider\"")
+            name = parts[1].strip()
+            price = float(parts[2].strip())
+            provider = parts[3].strip()
+            product = Product(name=name, price=price, provider=provider)
+            self.products.append(product)
+            return product
+        except (ValueError, IndexError) as e:
+            raise ParsingError(f"Ошибка парсинга продукта: {e}")
 
     def parse_delivery(self, input_str: str) -> Delivery:
         """Парсит строку с информацией о доставке.
@@ -87,14 +126,18 @@ class Parser:
             Returns:
                 Объект Delivery с полями: date, name, count
         """
-        parts = input_str.split('"')
-        date_str = parts[0].strip().split()[0]
-        product_name = parts[1]
-        quantity = int(parts[2])
-
-        delivery = Delivery(date=date_str, name=product_name, count=quantity)
-        self.deliveries.append(delivery)
-        return delivery
+        try:
+            parts = input_str.split('"')
+            if len(parts) < 3:
+                raise ParsingError("Неверный формат строки доставки, ожидается: YYYY.MM.DD \"name\" quantity")
+            date_str = parts[0].strip()
+            name = parts[1].strip()
+            count = int(parts[2].strip())
+            delivery = Delivery(date=date_str, name=name, count=count)
+            self.deliveries.append(delivery)
+            return delivery
+        except (ValueError, IndexError) as e:
+            raise ParsingError(f"Ошибка парсинга доставки: {e}")
 
     def parse_food(self, input_str: str) -> Food:
         """Парсит строку с информацией о еде.
@@ -105,16 +148,22 @@ class Parser:
         Returns:
             Объект Food с полями: name, start_date, end_date, price
         """
-        parts = input_str.split('"')[1:]
-        name = parts[0].replace('"', '')
-        parts = parts[1].split(' ')
-        start_date = datetime.strptime(parts[1], "%Y.%m.%d")
-        end_date = datetime.strptime(parts[2], "%Y.%m.%d")
-        price = float(parts[3])
-
-        food = Food(name=name, price=price, start_date=start_date, end_date=end_date)
-        self.foods.append(food)
-        return food
+        try:
+            parts = input_str.split('"')
+            if len(parts) < 3:
+                raise ParsingError("Неверный формат строки еды, ожидается: \"name\" start_date end_date price")
+            name = parts[1].strip()
+            rest = parts[2].strip().split()
+            if len(rest) < 3:
+                raise ParsingError("Недостаточно данных для еды")
+            start_date = datetime.strptime(rest[0], "%Y.%m.%d")
+            end_date = datetime.strptime(rest[1], "%Y.%m.%d")
+            price = float(rest[2])
+            food = Food(name=name, price=price, start_date=start_date, end_date=end_date)
+            self.foods.append(food)
+            return food
+        except (ValueError, IndexError) as e:
+            raise ParsingError(f"Ошибка парсинга еды: {e}")
 
     def parse_drinks(self, input_str: str) -> Drink:
         """Парсит строку с информацией о напитках.
@@ -125,18 +174,24 @@ class Parser:
         Returns:
             Объект Drink с полями: name, start_date, end_date, price, volume
         """
-        parts = input_str.split('"')[1:]
-        name = parts[0].replace('"', '')
-        parts = parts[1].split(' ')
-        start_date = datetime.strptime(parts[1], "%Y.%m.%d")
-        end_date = datetime.strptime(parts[2], "%Y.%m.%d")
-        price = float(parts[3])
-        volume = float(parts[4])
-
-        drink = Drink(name=name, price=price, start_date=start_date,
-                      end_date=end_date, volume=volume)
-        self.drinks.append(drink)
-        return drink
+        try:
+            parts = input_str.split('"')
+            if len(parts) < 3:
+                raise ParsingError("Неверный формат строки напитка, ожидается:"
+                                   " \"name\" start_date end_date price volume")
+            name = parts[1].strip()
+            rest = parts[2].strip().split()
+            if len(rest) < 4:
+                raise ParsingError("Недостаточно данных для напитка")
+            start_date = datetime.strptime(rest[0], "%Y.%m.%d")
+            end_date = datetime.strptime(rest[1], "%Y.%m.%d")
+            price = float(rest[2])
+            volume = float(rest[3])
+            drink = Drink(name=name, price=price, start_date=start_date, end_date=end_date, volume=volume)
+            self.drinks.append(drink)
+            return drink
+        except (ValueError, IndexError) as e:
+            raise ParsingError(f"Ошибка парсинга напитка: {e}")
 
     def get_all_products(self) -> List[BaseProduct]:
         """Возвращает все продукты (включая еду и напитки)"""
@@ -159,15 +214,14 @@ def read_file_lines(file_path: str) -> List[str]:
     Returns:
         Список строк файла
     """
-    with open(file_path, 'r', encoding='utf-8') as file:
-        return [line.strip() for line in file if line.strip()]
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return [line.strip() for line in file if line.strip()]
+    except FileNotFoundError:
+        raise ParsingError(f"Файл {file_path} не найден")
 
 
-def process_file_with_parser(
-        file_path: str,
-        parser_func: Callable[[str], Any],
-        data_name: str
-) -> None:
+def process_file_with_parser(file_path: str, parser_func: Callable[[str], Any], data_name: str) -> None:
     """Обрабатывает файл с использованием указанной функции-парсера.
 
     Args:
@@ -178,17 +232,17 @@ def process_file_with_parser(
     try:
         lines = read_file_lines(file_path)
         print(f"=== {data_name} из {file_path} ===")
-
         for line in lines:
-            parsed_obj = parser_func(line)
-            print(parsed_obj)
-
+            try:
+                parsed_obj = parser_func(line)
+                print(parsed_obj)
+            except ParsingError as e:
+                print(f"Ошибка обработки строки в файле {file_path}: {e}")
         print()
-
-    except FileNotFoundError:
-        print(f"Ошибка: Файл {file_path} не найден")
+    except ParsingError as e:
+        print(f"Ошибка: {e}")
     except Exception as e:
-        print(f"Ошибка при обработке файла {file_path}: {e}")
+        print(f"Неожиданная ошибка при обработке файла {file_path}: {e}")
 
 
 def main() -> None:
@@ -200,11 +254,9 @@ def main() -> None:
         ('4.txt', parser.parse_drinks, "Напитки")
     ]
 
-    # Обработка всех файлов
     for file_path, parser_func, data_name in file_parsers:
         process_file_with_parser(file_path, parser_func, data_name)
 
-    # Демонстрация доступа к данным
     print("=== Сводная информация ===")
     print(f"Всего продуктов: {len(parser.products)}")
     print(f"Всего доставок: {len(parser.deliveries)}")

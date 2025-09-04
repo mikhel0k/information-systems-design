@@ -1,4 +1,3 @@
-from argparse import ArgumentParser
 from datetime import datetime
 from typing import Dict, Any, Callable, List, Optional
 from dataclasses import dataclass
@@ -53,49 +52,58 @@ class Drink(Food):
     def __str__(self) -> str:
         return f"{super().__str__()}, объем: {self.volume}л"
 
+
 class Parser:
-    def parse_product(self, input_str: str) -> Dict[str, Any]:
+    def __init__(self):
+        self.products: List[Product] = []
+        self.deliveries: List[Delivery] = []
+        self.foods: List[Food] = []
+        self.drinks: List[Drink] = []
+
+    def parse_product(self, input_str: str) -> Product:
         """Парсит строку с информацией о продукте.
 
             Args:
                 input_str: Строка для парсинга в формате "name" price "provider"
 
             Returns:
-                Словарь с ключами: name, price, provider
+                Объект Product с полями: name, price, provider
         """
         parts = input_str.split('"')[1:]
         name = parts[0].replace('"', '')
         price = float(parts[1])
         provider = parts[2].replace('"', '')
 
-        return {'name': name, 'price': price, 'provider': provider}
+        product = Product(name=name, price=price, provider=provider)
+        self.products.append(product)
+        return product
 
-    def parse_delivery(self, input_str: str) -> Dict[str, Any]:
+    def parse_delivery(self, input_str: str) -> Delivery:
         """Парсит строку с информацией о доставке.
 
             Args:
                 input_str: Строка для парсинга в формате "YYYY.MM.DD "name" quantity"
 
             Returns:
-                Словарь с ключами: date, name, count
+                Объект Delivery с полями: date, name, count
         """
         parts = input_str.split('"')
-        date_str = parts[0].strip().split()
-        date_str = str(date_str[0])
+        date_str = parts[0].strip().split()[0]
         product_name = parts[1]
         quantity = int(parts[2])
-        date = datetime.strptime(date_str, "%Y.%m.%d")
 
-        return {"date": date.strftime('%Y.%m.%d'), "name": product_name, "count": quantity}
+        delivery = Delivery(date=date_str, name=product_name, count=quantity)
+        self.deliveries.append(delivery)
+        return delivery
 
-    def parse_food(self, input_str: str) -> Dict[str, Any]:
+    def parse_food(self, input_str: str) -> Food:
         """Парсит строку с информацией о еде.
 
         Args:
             input_str: Строка для парсинга в формате "name" start_date end_date price
 
         Returns:
-            Словарь с ключами: name, start_date, end_date, price
+            Объект Food с полями: name, start_date, end_date, price
         """
         parts = input_str.split('"')[1:]
         name = parts[0].replace('"', '')
@@ -104,16 +112,18 @@ class Parser:
         end_date = datetime.strptime(parts[2], "%Y.%m.%d")
         price = float(parts[3])
 
-        return {"name": name, "start_date": start_date, "end_date": end_date, "price": price}
+        food = Food(name=name, price=price, start_date=start_date, end_date=end_date)
+        self.foods.append(food)
+        return food
 
-    def parse_drinks(self, input_str: str) -> Dict[str, Any]:
+    def parse_drinks(self, input_str: str) -> Drink:
         """Парсит строку с информацией о напитках.
 
         Args:
             input_str: Строка для парсинга в формате "name" start_date end_date price volume
 
         Returns:
-            Словарь с ключами: name, start_date, end_date, price, volume
+            Объект Drink с полями: name, start_date, end_date, price, volume
         """
         parts = input_str.split('"')[1:]
         name = parts[0].replace('"', '')
@@ -123,10 +133,24 @@ class Parser:
         price = float(parts[3])
         volume = float(parts[4])
 
-        return {"name": name, "start_date": start_date, "end_date": end_date, "price": price, "volume": volume}
+        drink = Drink(name=name, price=price, start_date=start_date,
+                      end_date=end_date, volume=volume)
+        self.drinks.append(drink)
+        return drink
+
+    def get_all_products(self) -> List[BaseProduct]:
+        """Возвращает все продукты (включая еду и напитки)"""
+        return self.products + self.foods + self.drinks
+
+    def clear_data(self) -> None:
+        """Очищает все данные"""
+        self.products.clear()
+        self.deliveries.clear()
+        self.foods.clear()
+        self.drinks.clear()
 
 
-def read_file_lines(file_path: str) -> list:
+def read_file_lines(file_path: str) -> List[str]:
     """Читает все строки из файла.
 
     Args:
@@ -136,26 +160,28 @@ def read_file_lines(file_path: str) -> list:
         Список строк файла
     """
     with open(file_path, 'r', encoding='utf-8') as file:
-        return file.readlines()
+        return [line.strip() for line in file if line.strip()]
 
 
 def process_file_with_parser(
         file_path: str,
-        parser_func: Callable[[str], Dict[str, Any]]
+        parser_func: Callable[[str], Any],
+        data_name: str
 ) -> None:
     """Обрабатывает файл с использованием указанной функции-парсера.
 
     Args:
         file_path: Путь к файлу для обработки
         parser_func: Функция для парсинга строк
+        data_name: Название типа данных для вывода
     """
     try:
         lines = read_file_lines(file_path)
-        print(f"Данные из {file_path}:")
+        print(f"=== {data_name} из {file_path} ===")
 
         for line in lines:
-            parsed_data = parser_func(line.strip())
-            print(parsed_data)
+            parsed_obj = parser_func(line)
+            print(parsed_obj)
 
         print()
 
@@ -168,14 +194,23 @@ def process_file_with_parser(
 def main() -> None:
     parser = Parser()
     file_parsers = [
-        ('1.txt', parser.parse_delivery),
-        ('2.txt', parser.parse_product),
-        ('3.txt', parser.parse_food),
-        ('4.txt', parser.parse_drinks)
+        ('1.txt', parser.parse_delivery, "Доставки"),
+        ('2.txt', parser.parse_product, "Продукты"),
+        ('3.txt', parser.parse_food, "Еда"),
+        ('4.txt', parser.parse_drinks, "Напитки")
     ]
 
-    for file_path, parser_func in file_parsers:
-        process_file_with_parser(file_path, parser_func)
+    # Обработка всех файлов
+    for file_path, parser_func, data_name in file_parsers:
+        process_file_with_parser(file_path, parser_func, data_name)
+
+    # Демонстрация доступа к данным
+    print("=== Сводная информация ===")
+    print(f"Всего продуктов: {len(parser.products)}")
+    print(f"Всего доставок: {len(parser.deliveries)}")
+    print(f"Всего видов еды: {len(parser.foods)}")
+    print(f"Всего напитков: {len(parser.drinks)}")
+    print(f"Всего товаров: {len(parser.get_all_products())}")
 
 
 if __name__ == '__main__':

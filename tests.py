@@ -90,9 +90,7 @@ class TestParser(unittest.TestCase):
         with patch('sys.stdout', new=StringIO()) as mocked_output:
             process_file_with_parser('deliveries.txt', self.parser.parse_delivery, "Доставки")
             output = mocked_output.getvalue()
-            # Debug: Print the actual output to understand what's being captured
             print(f"Actual output: {repr(output)}")
-            # Check if the expected string is in the output, accounting for newlines
             self.assertTrue("Доставка: Milk x3 на 2023.12.25\n" in output)
 
     @patch('builtins.open', side_effect=FileNotFoundError)
@@ -100,9 +98,7 @@ class TestParser(unittest.TestCase):
         with patch('sys.stdout', new=StringIO()) as mocked_output:
             process_file_with_parser('nonexistent.txt', self.parser.parse_delivery, "Доставки")
             output = mocked_output.getvalue()
-            # Debug: Print the actual output to understand what's being captured
             print(f"Actual output: {repr(output)}")
-            # Check if the expected string is in the output, accounting for newlines
             self.assertTrue("Ошибка: Файл nonexistent.txt не найден\n" in output)
 
 

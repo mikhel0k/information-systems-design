@@ -1,7 +1,57 @@
 from argparse import ArgumentParser
 from datetime import datetime
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, List, Optional
+from dataclasses import dataclass
 
+
+@dataclass
+class BaseProduct:
+    """Базовый класс для всех продуктов"""
+    name: str
+    price: float
+
+    def __str__(self) -> str:
+        return f"{self.name} (${self.price})"
+
+
+@dataclass
+class Product(BaseProduct):
+    """Класс для обычных продуктов"""
+    provider: str
+
+    def __str__(self) -> str:
+        return f"{super().__str__()}, поставщик: {self.provider}"
+
+
+@dataclass
+class Delivery:
+    """Класс для информации о доставке"""
+    date: str
+    name: str
+    count: int
+
+    def __str__(self) -> str:
+        return f"Доставка: {self.name} x{self.count} на {self.date}"
+
+
+@dataclass
+class Food(BaseProduct):
+    """Класс для пищевых продуктов с сроком годности"""
+    start_date: datetime
+    end_date: datetime
+
+    def __str__(self) -> str:
+        return (f"{super().__str__()}, срок годности: "
+                f"{self.start_date.strftime('%Y.%m.%d')}-{self.end_date.strftime('%Y.%m.%d')}")
+
+
+@dataclass
+class Drink(Food):
+    """Класс для напитков (наследуется от Food)"""
+    volume: float
+
+    def __str__(self) -> str:
+        return f"{super().__str__()}, объем: {self.volume}л"
 
 class Parser:
     def parse_product(self, input_str: str) -> Dict[str, Any]:
@@ -19,7 +69,6 @@ class Parser:
         provider = parts[2].replace('"', '')
 
         return {'name': name, 'price': price, 'provider': provider}
-
 
     def parse_delivery(self, input_str: str) -> Dict[str, Any]:
         """Парсит строку с информацией о доставке.
@@ -39,7 +88,6 @@ class Parser:
 
         return {"date": date.strftime('%Y.%m.%d'), "name": product_name, "count": quantity}
 
-
     def parse_food(self, input_str: str) -> Dict[str, Any]:
         """Парсит строку с информацией о еде.
 
@@ -57,7 +105,6 @@ class Parser:
         price = float(parts[3])
 
         return {"name": name, "start_date": start_date, "end_date": end_date, "price": price}
-
 
     def parse_drinks(self, input_str: str) -> Dict[str, Any]:
         """Парсит строку с информацией о напитках.
@@ -116,6 +163,7 @@ def process_file_with_parser(
         print(f"Ошибка: Файл {file_path} не найден")
     except Exception as e:
         print(f"Ошибка при обработке файла {file_path}: {e}")
+
 
 def main() -> None:
     parser = Parser()

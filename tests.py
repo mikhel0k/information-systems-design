@@ -2,7 +2,12 @@ import unittest
 from datetime import datetime
 from unittest.mock import mock_open, patch
 from io import StringIO
-from work_file import BaseProduct, Product, Delivery, Food, Drink, Parser, read_file_lines, process_file_with_parser, ParsingError
+from Drink import Drink
+from Food import Food
+from Delivery import Delivery
+from Product import Product
+from BaseProduct import BaseProduct
+from work_file import Parser, read_file_lines, process_file_with_parser, ParsingError
 
 
 class TestParser(unittest.TestCase):

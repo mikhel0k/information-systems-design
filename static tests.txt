@@ -1,0 +1,3 @@
+flake8 BaseProduct.py Delivery.py Drink.py Food.py Parser.py ParsingError.py Product.py tests.py work_file.py
+
+mypy BaseProduct.py Delivery.py Drink.py Food.py Parser.py ParsingError.py Product.py tests.py work_file.py

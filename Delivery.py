@@ -1,7 +1,5 @@
-from BaseProduct import BaseProduct
 from dataclasses import dataclass
 import re
-from datetime import datetime
 
 
 @dataclass

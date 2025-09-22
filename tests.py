@@ -4,10 +4,8 @@ from unittest.mock import mock_open, patch
 from io import StringIO
 from Drink import Drink
 from Food import Food
-from Delivery import Delivery
 from Product import Product
-from BaseProduct import BaseProduct
-from work_file import Parser, read_file_lines, process_file_with_parser, ParsingError
+from work_file import Parser, process_file_with_parser, ParsingError
 
 
 class TestParser(unittest.TestCase):
@@ -53,7 +51,8 @@ class TestParser(unittest.TestCase):
         self.assertEqual(food.price, 5.99)
         self.assertEqual(food.start_date, datetime(2023, 1, 1))
         self.assertEqual(food.end_date, datetime(2023, 12, 31))
-        self.assertEqual(str(food), "Cheese (5.99Р), срок годности: 2023.01.01-2023.12.31")
+        self.assertEqual(str(food), "Cheese (5.99Р), срок годности: \
+        2023.01.01-2023.12.31")
         self.assertIn(food, self.parser.foods)
 
     def test_parse_food_invalid(self):
@@ -70,7 +69,8 @@ class TestParser(unittest.TestCase):
         self.assertEqual(drink.start_date, datetime(2023, 1, 1))
         self.assertEqual(drink.end_date, datetime(2023, 12, 31))
         self.assertEqual(drink.volume, 1.5)
-        self.assertEqual(str(drink), "Cola (2.49Р), срок годности: 2023.01.01-2023.12.31, объем: 1.5л")
+        self.assertEqual(str(drink), "Cola (2.49Р), срок годности: \
+        2023.01.01-2023.12.31, объем: 1.5л")
         self.assertIn(drink, self.parser.drinks)
 
     def test_parse_drinks_invalid(self):
@@ -87,7 +87,11 @@ class TestParser(unittest.TestCase):
 
     def test_validation_negative_volume(self):
         with self.assertRaises(ValueError):
-            Drink(name="Cola", price=2.49, start_date=datetime(2023, 1, 1), end_date=datetime(2023, 12, 31), volume=-1.5)
+            Drink(name="Cola",
+                  price=2.49,
+                  start_date=datetime(2023, 1, 1),
+                  end_date=datetime(2023, 12, 31),
+                  volume=-1.5)
 
     def test_get_all_products(self):
         self.parser.parse_product('"Apple" 1.99 "Fresh Farms"')
@@ -110,10 +114,14 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(self.parser.foods), 0)
         self.assertEqual(len(self.parser.drinks), 0)
 
-    @patch('builtins.open', new_callable=mock_open, read_data='2023.12.25 "Milk" 3\n"Invalid"')
+    @patch('builtins.open',
+           new_callable=mock_open,
+           read_data='2023.12.25 "Milk" 3\n"Invalid"')
     def test_process_file_with_parser(self, mock_file):
         with patch('sys.stdout', new=StringIO()) as mocked_output:
-            process_file_with_parser('deliveries.txt', self.parser.parse_delivery, "Доставки")
+            process_file_with_parser('deliveries.txt',
+                                     self.parser.parse_delivery,
+                                     "Доставки")
             output = mocked_output.getvalue()
             self.assertTrue("Доставка: Milk x3 на 2023.12.25" in output)
             self.assertTrue("Ошибка обработки строки" in output)
@@ -121,9 +129,13 @@ class TestParser(unittest.TestCase):
     @patch('builtins.open', side_effect=FileNotFoundError)
     def test_process_file_not_found(self, mock_file):
         with patch('sys.stdout', new=StringIO()) as mocked_output:
-            process_file_with_parser('nonexistent.txt', self.parser.parse_delivery, "Доставки")
+            process_file_with_parser('nonexistent.txt',
+                                     self.parser.parse_delivery,
+                                     "Доставки")
             output = mocked_output.getvalue()
             self.assertTrue("Ошибка: Файл nonexistent.txt не найден" in output)
 
+
 if __name__ == '__main__':
-    unittest.main()  # Также возможен запуск тестов командой python -m unittest tests.py
+    unittest.main()  # Также возможен запуск тестов командой
+    # python -m unittest tests.py

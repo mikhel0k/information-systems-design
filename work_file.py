@@ -19,7 +19,9 @@ def read_file_lines(file_path: str) -> List[str]:
         raise ParsingError(f"Файл {file_path} не найден")
 
 
-def process_file_with_parser(file_path: str, parser_func: Callable[[str], Any], data_name: str) -> None:
+def process_file_with_parser(file_path: str,
+                             parser_func: Callable[[str], Any],
+                             data_name: str) -> None:
     """Обрабатывает файл с использованием указанной функции-парсера.
 
     Args:
